@@ -4,32 +4,22 @@
 #include <stdarg.h>
 #include <mach-o/dyld.h>
 #include <string>
-#import <Foundation/Foundation.h>
 
 namespace utils {
     static FILE* log_file = nullptr;
 
     void init_logging() {
-        // Intentamos obtener la carpeta Documents de forma oficial
-        NSArray* paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString* documentsPath = [paths firstObject];
-        NSString* logPath = [documentsPath stringByAppendingPathComponent:@"ENHANCED_LOGS.TXT"];
+        char path[1024];
+        uint32_t size = sizeof(path);
+        _NSGetExecutablePath(path, &size);
 
-        log_file = fopen([logPath UTF8String], "a");
+        // Carpeta Documents del juego (estándar en ESign)
+        std::string log_path = std::string(path) + "/../Documents/ENHANCED_LOGS.TXT";
+        log_file = fopen(log_path.c_str(), "a");
 
         if (log_file) {
-            // Log inicial con información útil
-            NSString* bundleID = [[NSBundle mainBundle] bundleIdentifier];
-            log_to_file("🚀 enhanced-ios-hacker.dylib cargado");
-            log_to_file("[BUNDLE] App actual: %s", [bundleID UTF8String]);
-            log_to_file("[LOG] Archivo creado en: %s", [logPath UTF8String]);
-        } else {
-            // Fallback si falla
-            char path[1024];
-            uint32_t size = sizeof(path);
-            _NSGetExecutablePath(path, &size);
-            std::string fallback = std::string(path) + "/../Documents/ENHANCED_LOGS.TXT";
-            log_file = fopen(fallback.c_str(), "a");
+            log_to_file("🚀 enhanced-ios-hacker.dylib cargado en iOS 26 jailed");
+            log_to_file("[LOG] Archivo creado en: %s", log_path.c_str());
         }
     }
 
