@@ -20,8 +20,8 @@ namespace utils {
         va_list args;
         va_start(args, fmt);
         vfprintf(log_file, fmt, args);
-        fprintf(log_file, "\n");
         va_end(args);
+        fprintf(log_file, "\n");
         fflush(log_file);
     }
 }
