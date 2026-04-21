@@ -6,9 +6,12 @@
 #include "jit_helper/jit_helper.h"
 
 extern "C" void init_exploit_framework();
+extern "C" void show_load_toast();   // del archivo visual_feedback
 
 __attribute__((constructor))
 static void init_framework() {
+    show_load_toast();   // ← Toast inmediato para confirmar carga
+
     utils::init_logging();
     utils::log_to_file("🚀 enhanced-ios-hacker.dylib cargado en iOS 26 jailed");
     utils::log_to_file("[ENV] %s", jit_helper::get_status().c_str());
