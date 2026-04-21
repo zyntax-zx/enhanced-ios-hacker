@@ -14,23 +14,17 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Theos + Dependencies (incluyendo ldid)
+      - name: Install Theos + ldid
         run: |
           export THEOS=/Users/runner/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-
-          # Instalar ldid y xz (obligatorio para signing)
           brew install ldid xz
-
-          # Descargar patched SDKs
           mkdir -p $THEOS/sdks
           cd $THEOS/sdks
           curl -L -o sdks.zip https://github.com/theos/sdks/archive/refs/heads/master.zip
           unzip -q sdks.zip
           mv sdks-master/* . 2>/dev/null || true
           rm -rf sdks-master sdks.zip
-
-          echo "✅ Theos + ldid + SDKs instalados correctamente"
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Build dylib
@@ -43,4 +37,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: enhanced-ios-hacker-dylib
-          path: ./theos/obj/enhanced-ios-hacker.dylib
+          path: .theos/obj/debug/enhanced-ios-hacker.dylib   # ← Ruta corregida
