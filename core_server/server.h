@@ -1,2 +1,6 @@
+// core_server/server.h
 #pragma once
-void start_tcp_server();
+
+namespace core_server {
+    void start_tcp_server();
+}
