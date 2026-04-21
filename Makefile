@@ -9,10 +9,10 @@ enhanced-ios-hacker_FILES = main.cpp \
     overlay/imgui_overlay.mm \
     utils/utils.cpp
 
-enhanced-ios-hacker_CFLAGS = -fobjc-arc -std=c++20 -I$(THEOS_PROJECT_DIR)/fishhook -I$(THEOS_PROJECT_DIR)/imgui
+enhanced-ios-hacker_CFLAGS = -fobjc-arc -std=c++20 -I$(THEOS)/vendor/orion/fishhook
 enhanced-ios-hacker_LDFLAGS = -framework Metal -framework UIKit -framework Foundation
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-package::
-	@echo "✅ enhanced-ios-hacker.dylib listo para descargar"
+	@echo "✅ enhanced-ios-hacker.dylib compilado correctamente"
