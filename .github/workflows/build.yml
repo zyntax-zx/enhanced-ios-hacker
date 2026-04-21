@@ -14,32 +14,30 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Theos (robust method)
+      - name: Install Theos + SDKs (robust)
         run: |
-          # Instalar Theos manualmente evitando el fallback roto
           export THEOS=/Users/runner/theos
-          mkdir -p $THEOS
           git clone --recursive https://github.com/theos/theos.git $THEOS
 
-          # Descargar e instalar patched SDKs manualmente (iOS 16.5 recomendado para compatibilidad amplia)
-          cd $THEOS
+          # Descargar patched SDKs (iOS 16.5 es estable en 2026)
+          mkdir -p $THEOS/sdks
+          cd $THEOS/sdks
           curl -L -o sdks.zip https://github.com/theos/sdks/archive/refs/heads/master.zip
           unzip -q sdks.zip
-          mv sdks-master/* sdks/ 2>/dev/null || true
+          mv sdks-master/* . 2>/dev/null || true
           rm -rf sdks-master sdks.zip
-          echo "✅ Patched SDKs instalados"
+          echo "✅ Theos y SDKs instalados correctamente"
 
-          # Asegurar que Xcode esté disponible
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Build dylib
-        working-directory: ./enhanced-ios-hacker/enhanced-ios-hacker
-        env:
-          THEOS: /Users/runner/theos
-        run: make package
+        run: |
+          export THEOS=/Users/runner/theos
+          export THEOS_MAKE_PATH=$THEOS/makefiles
+          make package
 
       - name: Upload dylib artifact
         uses: actions/upload-artifact@v4
         with:
           name: enhanced-ios-hacker-dylib
-          path: enhanced-ios-hacker/enhanced-ios-hacker/theos/obj/enhanced-ios-hacker.dylib
+          path: ./theos/obj/enhanced-ios-hacker.dylib
