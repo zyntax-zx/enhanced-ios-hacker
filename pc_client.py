@@ -164,6 +164,27 @@ class NexusClient:
             return struct.unpack('<Q', resp_payload[:8])[0]
         return 0
 
+    def dump_memory(self, address, length=256):
+        """Lee N bytes de memoria y los muestra como hex dump profesional."""
+        length = min(length, 512)  # El servidor limita a 512 bytes
+        payload = struct.pack('<QI', address, length)
+        self._send_cmd(CMD_READ_MEM, payload)
+        cmd, resp_payload = self._recv_resp()
+        if cmd == CMD_READ_MEM and len(resp_payload) > 0:
+            data = resp_payload
+            print(f"[+] Dump de {len(data)} bytes desde 0x{address:016x}:")
+            print(f"  {'Offset':>12s}  {'Hex':48s}  ASCII")
+            print(f"  {'─'*12}  {'─'*48}  {'─'*16}")
+            for i in range(0, len(data), 16):
+                row = data[i:i+16]
+                hex_part = ' '.join(f'{b:02X}' for b in row)
+                ascii_part = ''.join(chr(b) if 32 <= b < 127 else '.' for b in row)
+                print(f"  0x{address+i:012X}  {hex_part:<48s}  {ascii_part}")
+            return data
+        else:
+            print("[-] Error leyendo memoria.")
+            return None
+
     def read_chain(self, base_address, offsets):
         ptr = base_address
         print(f"[*] Recorriendo cadena desde 0x{base_address:016x}...")
@@ -207,6 +228,7 @@ def interactive_shell(client):
                 print("Comandos disponibles:")
                 print("  ping       - Verificar conexión")
                 print("  mod [name] - Listar módulos (ej: mod, mod wuthering)")
+                print("  dump <addr> [len] - Dump de memoria (ej: dump 0x11029409e 128)")
                 print("  readptr <addr> - Leer un puntero de 64 bits (ej: readptr 0x10038c000)")
                 print("  scanptr <addr> - Buscar qué parte de la RAM apunta a esta dirección")
                 print("  aob <pattern> - Buscar AOB (ej: aob 48 8B 05 ? ? ? ? 48 85 C0)")
@@ -223,6 +245,14 @@ def interactive_shell(client):
                     client.enum_modules(parts[1])
                 else:
                     client.enum_modules()
+            elif cmd.startswith('dump '):
+                try:
+                    parts = cmd.split()
+                    addr = int(parts[1], 16)
+                    length = int(parts[2]) if len(parts) > 2 else 256
+                    client.dump_memory(addr, length)
+                except Exception as e:
+                    print(f"Uso: dump <hex_addr> [longitud] (Error: {e})")
             elif cmd.startswith('readptr '):
                 try:
                     addr = int(cmd.split(' ')[1], 16)
