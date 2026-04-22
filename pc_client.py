@@ -155,6 +155,28 @@ class NexusClient:
         else:
             print("[-] Error obteniendo módulos.")
 
+    def read_pointer(self, address):
+        payload = struct.pack('<QI', address, 8)
+        self._send_cmd(CMD_READ_MEM, payload)
+        cmd, resp_payload = self._recv_resp()
+        if cmd == CMD_READ_MEM and len(resp_payload) >= 8:
+            return struct.unpack('<Q', resp_payload[:8])[0]
+        return 0
+
+    def read_chain(self, base_address, offsets):
+        ptr = base_address
+        print(f"[*] Recorriendo cadena desde 0x{base_address:016x}...")
+        for offset in offsets[:-1]:
+            new_ptr = self.read_pointer(ptr + offset)
+            print(f"    -> 0x{ptr:016x} + 0x{offset:X} = 0x{new_ptr:016x}")
+            ptr = new_ptr
+            if ptr == 0:
+                print("[-] Puntero nulo detectado en la cadena.")
+                return 0
+        final_addr = ptr + offsets[-1]
+        print(f"[+] Dirección final resuelta: 0x{final_addr:016x}")
+        return final_addr
+
 def interactive_shell(client):
     while True:
         try:
@@ -163,6 +185,7 @@ def interactive_shell(client):
                 print("Comandos disponibles:")
                 print("  ping       - Verificar conexión")
                 print("  mod [name] - Listar módulos (ej: mod, mod wuthering)")
+                print("  readptr <addr> - Leer un puntero de 64 bits (ej: readptr 0x10038c000)")
                 print("  snap <val> - Tomar snapshot (ej: snap 1090)")
                 print("  diff <val> - Filtrar snapshot (ej: diff 875)")
                 print("  write <addr> <val> - Escribir un valor (ej: write 0x123 99)")
@@ -176,6 +199,13 @@ def interactive_shell(client):
                     client.enum_modules(parts[1])
                 else:
                     client.enum_modules()
+            elif cmd.startswith('readptr '):
+                try:
+                    addr = int(cmd.split(' ')[1], 16)
+                    val = client.read_pointer(addr)
+                    print(f"[+] Puntero en 0x{addr:016x} -> 0x{val:016x}")
+                except Exception as e:
+                    print("Uso: readptr <hex_addr> (Error:", e, ")")
             elif cmd.startswith('snap'):
                 parts = cmd.split(' ')
                 if len(parts) == 1:
