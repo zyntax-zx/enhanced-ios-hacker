@@ -113,6 +113,24 @@ class NexusClient:
             print("[-] Error en scan_diff.")
             return -1
 
+    def write_mem(self, address, value):
+        print(f"[*] Escribiendo valor {value} en 0x{address:016x}...")
+        # Empaquetamos la direccion (8 bytes), el tamaño (4 bytes) y el valor de 4 bytes (int)
+        payload = struct.pack('<QI', address, 4) + struct.pack('<i', value)
+        # Rellenamos hasta 256 bytes de data (segun WriteMemPayload)
+        payload += b'\x00' * (256 - 4)
+        
+        self._send_cmd(CMD_WRITE_MEM, payload)
+        cmd, resp_payload = self._recv_resp()
+        if cmd == CMD_WRITE_MEM and len(resp_payload) >= 1:
+            status = resp_payload[0]
+            if status == 1:
+                print("[+] Escritura exitosa.")
+            else:
+                print("[-] Fallo al escribir (posible memoria de solo lectura).")
+        else:
+            print("[-] Error en la comunicación.")
+
 def interactive_shell(client):
     while True:
         try:
@@ -122,6 +140,7 @@ def interactive_shell(client):
                 print("  ping       - Verificar conexión")
                 print("  snap       - Tomar snapshot (valores 1-200)")
                 print("  diff <val> - Filtrar snapshot por nuevo valor (ej: diff 160)")
+                print("  write <addr> <val> - Escribir un valor entero en una dirección")
                 print("  mode <0|1> - 0=RESEARCH, 1=EXPLOIT")
                 print("  exit       - Salir")
             elif cmd == 'ping':
@@ -134,6 +153,17 @@ def interactive_shell(client):
                     client.scan_diff(val, val)
                 except Exception as e:
                     print("Uso: diff <valor_actual> (Error:", e, ")")
+            elif cmd.startswith('write '):
+                parts = cmd.split(' ')
+                if len(parts) == 3:
+                    try:
+                        addr = int(parts[1], 16)
+                        val = int(parts[2])
+                        client.write_mem(addr, val)
+                    except Exception as e:
+                        print("Error parseando parámetros:", e)
+                else:
+                    print("Uso: write 0xDireccion Valor (ej: write 0x158ab76c4 9999)")
             elif cmd.startswith('mode '):
                 try:
                     val = int(cmd.split(' ')[1])
