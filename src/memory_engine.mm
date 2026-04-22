@@ -112,8 +112,8 @@ std::vector<uintptr_t> mem_aob_scan(const char *pattern) {
         kern_return_t kr = vm_region_64(mach_task_self(), &addr, &size, VM_REGION_BASIC_INFO_64, (vm_region_info_t)&info, &count, &obj);
         if (kr != KERN_SUCCESS) break;
 
-        // Buscamos código ejecutable (r-x) para funciones y GWorld pointers
-        if ((info.protection & VM_PROT_READ) && (info.protection & VM_PROT_EXECUTE)) {
+        // Buscamos código ejecutable y datos (r-x, rw-, r--) para encontrar tanto patrones de código como punteros
+        if ((info.protection & VM_PROT_READ)) {
             // Leer en bloques seguros de 1MB con superposición
             const size_t BLOCK_SIZE = 1024 * 1024;
             uint8_t *buf = (uint8_t*)malloc(BLOCK_SIZE);
