@@ -85,6 +85,26 @@ static void handle_client(int fd) {
                 send(fd, &c32, 4, 0);
                 break;
             }
+            case CMD_SCAN_DIFF: {
+                if (hdr.len < 8) break;
+                int new_min = *(int*)(payload);
+                int new_max = *(int*)(payload + 4);
+                extern std::vector<uintptr_t> mem_scan_diff(int, int);
+                std::vector<uintptr_t> results = mem_scan_diff(new_min, new_max);
+                
+                uint32_t count = (uint32_t)results.size();
+                nexus_log("SERVER", "SCAN_DIFF: %u encontrados", count);
+                
+                uint32_t max_send = MIN(count, 100);
+                uint32_t resp_len = 4 + (max_send * sizeof(uintptr_t));
+                TLVHeader resp = { CMD_SCAN_DIFF, resp_len };
+                send(fd, &resp, sizeof(resp), 0);
+                send(fd, &count, 4, 0); 
+                if (max_send > 0) {
+                    send(fd, results.data(), max_send * sizeof(uintptr_t), 0);
+                }
+                break;
+            }
             case CMD_SET_MODE: {
                 uint8_t mode = payload[0];
                 g_nexus_mode = (mode == 1) ? NEXUS_MODE_EXPLOIT : NEXUS_MODE_RESEARCH;

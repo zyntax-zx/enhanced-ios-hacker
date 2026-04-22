@@ -90,6 +90,63 @@ class NexusClient:
         else:
             print("[-] Error cambiando el modo.")
 
+    def scan_diff(self, new_min, new_max):
+        print(f"[*] Escaneando diferencias (Fase 2) para valores entre {new_min} y {new_max}...")
+        payload = struct.pack('<II', new_min, new_max)
+        self._send_cmd(CMD_SCAN_DIFF, payload)
+        
+        cmd, resp_payload = self._recv_resp()
+        if cmd == CMD_SCAN_DIFF and len(resp_payload) >= 4:
+            count = struct.unpack('<I', resp_payload[:4])[0]
+            print(f"[+] Diff completado: {count} candidatos restantes.")
+            
+            # Leer hasta 100 punteros si count <= 100
+            if count > 0 and count <= 100:
+                ptr_data = resp_payload[4:]
+                num_ptrs = len(ptr_data) // 8
+                if num_ptrs > 0:
+                    ptrs = struct.unpack('<' + 'Q'*num_ptrs, ptr_data)
+                    for i, p in enumerate(ptrs):
+                        print(f"    [{i+1}] 0x{p:016x}")
+            return count
+        else:
+            print("[-] Error en scan_diff.")
+            return -1
+
+def interactive_shell(client):
+    while True:
+        try:
+            cmd = input("\n[NEXUS Shell] > ").strip().lower()
+            if not cmd or cmd == 'help':
+                print("Comandos disponibles:")
+                print("  ping       - Verificar conexión")
+                print("  snap       - Tomar snapshot (valores 1-200)")
+                print("  diff <val> - Filtrar snapshot por nuevo valor (ej: diff 160)")
+                print("  mode <0|1> - 0=RESEARCH, 1=EXPLOIT")
+                print("  exit       - Salir")
+            elif cmd == 'ping':
+                client.ping()
+            elif cmd == 'snap':
+                client.scan_snapshot()
+            elif cmd.startswith('diff '):
+                try:
+                    val = int(cmd.split(' ')[1])
+                    client.scan_diff(val, val)
+                except Exception as e:
+                    print("Uso: diff <valor_actual> (Error:", e, ")")
+            elif cmd.startswith('mode '):
+                try:
+                    val = int(cmd.split(' ')[1])
+                    client.set_mode(exploit_mode=(val==1))
+                except:
+                    print("Uso: mode <0|1>")
+            elif cmd == 'exit' or cmd == 'quit':
+                break
+            else:
+                print("Comando desconocido. Escribe 'help'.")
+        except KeyboardInterrupt:
+            break
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Uso: python pc_client.py <IP_DEL_IPHONE>")
@@ -100,16 +157,8 @@ if __name__ == '__main__':
     try:
         client.connect()
         client.ping()
-        
-        # Ejemplo de flujo de trabajo:
-        # 1. Cambiar a modo Research (solo logear, no modificar nada peligroso aún)
-        client.set_mode(exploit_mode=False)
-        
-        # 2. Tomar un snapshot inicial del heap del juego
-        client.scan_snapshot()
-        
+        interactive_shell(client)
     except Exception as e:
         print(f"[-] Error de conexión: {e}")
-        print("[!] Asegúrate de que el juego está abierto y el dispositivo está en la misma red WiFi.")
     finally:
         client.disconnect()
