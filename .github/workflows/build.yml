@@ -1,40 +1,37 @@
-name: Build enhanced-ios-hacker.dylib
+name: build_nexus
 
 on:
   push:
     branches: [ main ]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install Theos + ldid
+      - name: Install Dependencies
+        run: brew install ldid
+
+      - name: Setup Theos
         run: |
-          export THEOS=/Users/runner/theos
+          export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-          brew install ldid xz
-          mkdir -p $THEOS/sdks
-          cd $THEOS/sdks
-          curl -L -o sdks.zip https://github.com/theos/sdks/archive/refs/heads/master.zip
-          unzip -q sdks.zip
-          mv sdks-master/* . 2>/dev/null || true
-          rm -rf sdks-master sdks.zip
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          curl -LO https://github.com/theos/sdks/archive/master.zip
+          unzip master.zip -d $THEOS/sdks
+          mv $THEOS/sdks/sdks-master/* $THEOS/sdks
+          rm -rf master.zip $THEOS/sdks/sdks-master
 
-      - name: Build dylib
+      - name: Build NEXUS
         run: |
-          export THEOS=/Users/runner/theos
-          export THEOS_MAKE_PATH=$THEOS/makefiles
-          make package
+          export THEOS=~/theos
+          make clean all
 
-      - name: Upload dylib artifact
+      - name: Upload Dylib
         uses: actions/upload-artifact@v4
         with:
-          name: enhanced-ios-hacker-dylib
-          path: .theos/obj/debug/enhanced-ios-hacker.dylib   # ← Ruta corregida
+          name: nexus_v1.0
+          path: .theos/obj/arm64/nexus.dylib
