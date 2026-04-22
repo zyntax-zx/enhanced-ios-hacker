@@ -11,14 +11,15 @@ nexus_FILES := src/main.mm \
                src/memory_engine.mm \
                src/hook_engine.mm \
                src/module_analyzer.mm \
-               src/exploit_framework.mm
+               src/exploit_framework.mm \
+               src/fishhook.c
 
-nexus_CFLAGS := -fobjc-arc -fno-modules \
-                -Wno-deprecated-declarations \
-                -Wno-unused-variable \
-                -std=c++17
+nexus_CFLAGS  := -fobjc-arc -fno-modules \
+                 -Wno-deprecated-declarations \
+                 -Wno-unused-variable \
+                 -std=c++17
 
-nexus_FRAMEWORKS := UIKit Foundation Security
+nexus_FRAMEWORKS := UIKit Foundation
 nexus_LIBRARIES  := z
 
 include $(THEOS_MAKE_PATH)/tweak.mk
